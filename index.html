@@ -16,14 +16,13 @@ body{
   font-family:Arial, sans-serif;
 }
 
-/* Envelope */
+/* Envelope box */
 .envelope{
   width:300px;
   height:200px;
-  position:relative;
   background:#c0392b;
+  position:relative;
   border-radius:6px;
-  cursor:pointer;
 }
 
 /* Flap */
@@ -39,7 +38,7 @@ body{
   transition:transform 0.6s ease;
 }
 
-/* Content inside */
+/* Inside content */
 .content{
   position:absolute;
   top:25px;
@@ -49,9 +48,9 @@ body{
   background:white;
   color:black;
   border-radius:4px;
-  display:none;
-  text-align:center;
   padding:10px;
+  text-align:center;
+  display:none;
 }
 
 /* Open state */
@@ -72,14 +71,10 @@ button{
   border-radius:8px;
 }
 
-#yes{
-  background:pink;
-}
-
+#yes{ background:pink; }
 #no{
   background:#ccc;
   position:absolute;
-  pointer-events:auto;
 }
 </style>
 </head>
@@ -102,36 +97,52 @@ const noBtn = document.getElementById("no");
 const yesBtn = document.getElementById("yes");
 const content = document.getElementById("content");
 
-/* Open envelope */
+let opened = false;
+let answered = false;
+
+/* Simple sound using Web Audio (works on phones) */
+function playSound(freq, duration){
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  osc.frequency.value = freq;
+  osc.connect(ctx.destination);
+  osc.start();
+  setTimeout(()=>osc.stop(), duration);
+}
+
+/* STEP 2: Open envelope */
 envelope.addEventListener("click", () => {
+  if(opened) return;
+  opened = true;
   envelope.classList.add("open");
+  playSound(600,150); // open sound
   moveNo();
 });
 
-/* Move NO button (BEFORE click) */
+/* NO button escape (cannot click) */
 function moveNo(){
   const maxX = content.clientWidth - noBtn.offsetWidth;
   const maxY = content.clientHeight - noBtn.offsetHeight;
-
   noBtn.style.left = Math.random() * maxX + "px";
   noBtn.style.top  = Math.random() * maxY + "px";
 }
 
-/* Make NO impossible to click */
-noBtn.addEventListener("touchstart", (e) => {
+noBtn.addEventListener("touchstart", (e)=>{
   e.preventDefault();
   moveNo();
 });
-
 noBtn.addEventListener("mouseenter", moveNo);
-noBtn.addEventListener("click", (e) => {
+noBtn.addEventListener("click", (e)=>{
   e.preventDefault();
   moveNo();
 });
 
-/* YES button */
-yesBtn.addEventListener("click", () => {
-  content.innerHTML = "<h2>🎆 I LOVE YOU BAEB 🎆</h2>";
+/* STEP 3: YES button ONLY */
+yesBtn.addEventListener("click", ()=>{
+  if(answered) return;
+  answered = true;
+  playSound(900,300); // success sound
+  content.innerHTML = "<h2>❤️ I LOVE YOU BAEB ❤️</h2>";
 });
 </script>
 
