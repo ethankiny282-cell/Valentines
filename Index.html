@@ -1,0 +1,271 @@
+<!--
+Developed by GRWIZE LTD
+Phone: 0725 244 467
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Open Me 💌</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  margin:0;
+  height:100vh;
+  background:#000;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#fff;
+  overflow:hidden;
+}
+
+.envelope{
+  font-size:30vw;
+  animation:pulse 1.8s infinite;
+  cursor:pointer;
+}
+
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+
+.card{
+  display:none;
+  width:92%;
+  max-width:360px;
+  text-align:center;
+}
+
+h1{
+  font-size:clamp(24px,6vw,32px);
+  margin-bottom:30px;
+}
+
+.buttons{
+  position:relative;
+  height:140px;
+}
+
+button{
+  width:140px;
+  padding:16px;
+  font-size:18px;
+  border-radius:14px;
+  border:none;
+  font-weight:600;
+}
+
+#yes{
+  background:#ff4d6d;
+  color:#fff;
+}
+
+#no{
+  background:#444;
+  color:#fff;
+  position:absolute;
+}
+
+canvas{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  display:none;
+}
+
+.share{
+  margin-top:30px;
+  padding:14px 20px;
+  background:#25D366;
+  color:#fff;
+  border-radius:14px;
+  font-size:16px;
+  border:none;
+}
+
+.rotate-warning{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000;
+  color:#fff;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:20px;
+  z-index:10;
+}
+</style>
+</head>
+
+<body>
+
+<div class="rotate-warning" id="rotateWarn">
+  <h1>Please rotate your phone 📱</h1>
+</div>
+
+<div class="envelope" id="envelope">💌</div>
+
+<div class="card" id="card">
+  <h1 id="question"></h1>
+  <div class="buttons">
+    <button id="yes">Yes</button>
+    <button id="no">No</button>
+  </div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<!-- Hidden credit (long press) -->
+<div id="grwize-credit" style="
+  position:fixed;
+  bottom:8px;
+  right:10px;
+  font-size:10px;
+  opacity:0.15;
+  display:none;
+  z-index:99;
+">
+Developed by GRWIZE LTD · 0725 244 467
+</div>
+
+<script>
+/*
+  Developed by GRWIZE LTD
+  Contact: 0725 244 467
+  All rights reserved
+*/
+
+/* ---- orientation soft lock ---- */
+function checkOrientation(){
+  document.getElementById('rotateWarn').style.display =
+    window.innerWidth > window.innerHeight ? 'flex' : 'none';
+}
+window.addEventListener('resize',checkOrientation);
+checkOrientation();
+
+/* ---- personalization ---- */
+const params = new URLSearchParams(location.search);
+const name = params.get('name') || '';
+
+/* ---- elements ---- */
+const envelope = document.getElementById('envelope');
+const card = document.getElementById('card');
+const noBtn = document.getElementById('no');
+const yesBtn = document.getElementById('yes');
+const question = document.getElementById('question');
+const canvas = document.getElementById('confetti');
+const ctx = canvas.getContext('2d');
+
+/* ---- vibration ---- */
+function vibrate(ms){
+  if(navigator.vibrate) navigator.vibrate(ms);
+}
+
+/* ---- open envelope ---- */
+function openCard(){
+  envelope.style.display='none';
+  card.style.display='block';
+  question.textContent = `${name || ''} would you be my Valentine? 💖`;
+  moveNo();
+  vibrate(20);
+}
+envelope.onclick = openCard;
+envelope.ontouchstart = openCard;
+
+/* ---- NO button evasion ---- */
+function moveNo(){
+  const x = Math.random() * (window.innerWidth - 160);
+  const y = Math.random() * 120;
+  noBtn.style.left = x + 'px';
+  noBtn.style.top = y + 'px';
+}
+['touchstart','mouseover'].forEach(e =>
+  noBtn.addEventListener(e, moveNo)
+);
+
+/* ---- YES action ---- */
+yesBtn.onclick = () => {
+  vibrate([40,60,40]);
+  card.innerHTML = `
+    <h1>I love you ${name || 'baeb'} ❤️</h1>
+    <button class="share" onclick="share()">Share ❤️</button>
+  `;
+  startConfetti();
+};
+
+/* ---- WhatsApp share ---- */
+function share(){
+  const msg = encodeURIComponent('💌 Open this\n' + location.href);
+  location.href = 'https://wa.me/?text=' + msg;
+}
+
+/* ---- confetti canvas ---- */
+function resizeCanvas(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resizeCanvas();
+window.onresize = resizeCanvas;
+
+let particles = [];
+
+function startConfetti(){
+  canvas.style.display='block';
+  for(let i=0;i<120;i++){
+    particles.push({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height,
+      r:Math.random()*6+4,
+      vx:Math.random()*4-2,
+      vy:Math.random()*-6-2
+    });
+  }
+  requestAnimationFrame(update);
+}
+
+function update(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particles.forEach(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vy+=0.15;
+    ctx.font=p.r*2+'px serif';
+    ctx.fillText('🎉',p.x,p.y);
+  });
+  particles = particles.filter(p=>p.y<canvas.height);
+  if(particles.length) requestAnimationFrame(update);
+}
+
+/* ---- hidden credit long press ---- */
+let grwizeTimer;
+document.body.addEventListener('touchstart',()=>{
+  grwizeTimer = setTimeout(()=>{
+    const c = document.getElementById('grwize-credit');
+    if(c) c.style.display='block';
+  },1200);
+});
+document.body.addEventListener('touchend',()=>{
+  clearTimeout(grwizeTimer);
+});
+
+/* ---- console signature ---- */
+console.log(
+  "%cDeveloped by GRWIZE LTD | 0725 244 467",
+  "color:#ff4d6d;font-size:14px;font-weight:bold"
+);
+</script>
+
+</body>
+</html>
