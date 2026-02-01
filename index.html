@@ -9,20 +9,22 @@
 body{
   margin:0;
   height:100vh;
-  background:black;
+  background:radial-gradient(circle at top, #1a1a1a, #000);
   display:flex;
   justify-content:center;
   align-items:center;
-  font-family:Arial, sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  overflow:hidden;
 }
 
-/* Envelope box */
+/* Envelope */
 .envelope{
-  width:300px;
-  height:200px;
-  background:#c0392b;
+  width:320px;
+  height:210px;
+  background:linear-gradient(135deg,#d63a3a,#b22222);
   position:relative;
-  border-radius:6px;
+  border-radius:10px;
+  box-shadow:0 20px 40px rgba(0,0,0,.6);
 }
 
 /* Flap */
@@ -32,49 +34,58 @@ body{
   left:0;
   width:100%;
   height:100%;
-  background:#e74c3c;
+  background:linear-gradient(135deg,#ff5a5a,#d63a3a);
   clip-path:polygon(0 0,100% 0,50% 55%);
   transform-origin:top;
-  transition:transform 0.6s ease;
+  transition:transform .7s cubic-bezier(.2,.8,.2,1);
 }
 
-/* Inside content */
+/* Inside */
 .content{
   position:absolute;
-  top:25px;
-  left:15px;
-  right:15px;
-  bottom:15px;
+  top:30px;
+  left:20px;
+  right:20px;
+  bottom:20px;
   background:white;
-  color:black;
-  border-radius:4px;
-  padding:10px;
+  color:#111;
+  border-radius:8px;
+  padding:15px;
   text-align:center;
   display:none;
+  box-shadow:inset 0 0 20px rgba(0,0,0,.15);
 }
 
 /* Open state */
-.envelope.open .flap{
-  transform:rotateX(180deg);
-}
-
-.envelope.open .content{
-  display:block;
-}
+.envelope.open .flap{ transform:rotateX(180deg); }
+.envelope.open .content{ display:block; }
 
 /* Buttons */
 button{
-  padding:10px 18px;
-  margin:8px;
-  font-size:16px;
+  padding:12px 22px;
+  margin:10px;
+  font-size:17px;
   border:none;
-  border-radius:8px;
+  border-radius:999px;
+  font-weight:600;
 }
 
-#yes{ background:pink; }
+#yes{
+  background:linear-gradient(135deg,#ff4d6d,#ff758f);
+  color:white;
+}
+
 #no{
-  background:#ccc;
+  background:#ddd;
   position:absolute;
+}
+
+/* Fireworks canvas */
+canvas{
+  position:fixed;
+  inset:0;
+  display:none;
+  pointer-events:none;
 }
 </style>
 </head>
@@ -91,59 +102,107 @@ button{
   </div>
 </div>
 
+<canvas id="fireworks"></canvas>
+
 <script>
 const envelope = document.getElementById("envelope");
 const noBtn = document.getElementById("no");
 const yesBtn = document.getElementById("yes");
 const content = document.getElementById("content");
+const canvas = document.getElementById("fireworks");
+const ctx = canvas.getContext("2d");
 
 let opened = false;
 let answered = false;
 
-/* Simple sound using Web Audio (works on phones) */
-function playSound(freq, duration){
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  osc.frequency.value = freq;
-  osc.connect(ctx.destination);
-  osc.start();
-  setTimeout(()=>osc.stop(), duration);
+/* Resize canvas */
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+
+/* Modern sound (safe for phones) */
+function playPop(freq){
+  const a = new (AudioContext||webkitAudioContext)();
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.frequency.value = freq;
+  o.type = "triangle";
+  g.gain.value = 0.08;
+  o.connect(g);
+  g.connect(a.destination);
+  o.start();
+  setTimeout(()=>o.stop(),120);
 }
 
-/* STEP 2: Open envelope */
-envelope.addEventListener("click", () => {
+/* Step 2: open envelope */
+envelope.onclick = () => {
   if(opened) return;
   opened = true;
   envelope.classList.add("open");
-  playSound(600,150); // open sound
+  playPop(500);
   moveNo();
-});
+};
 
-/* NO button escape (cannot click) */
+/* NO escape */
 function moveNo(){
   const maxX = content.clientWidth - noBtn.offsetWidth;
   const maxY = content.clientHeight - noBtn.offsetHeight;
-  noBtn.style.left = Math.random() * maxX + "px";
-  noBtn.style.top  = Math.random() * maxY + "px";
+  noBtn.style.left = Math.random()*maxX+"px";
+  noBtn.style.top  = Math.random()*maxY+"px";
 }
 
-noBtn.addEventListener("touchstart", (e)=>{
-  e.preventDefault();
-  moveNo();
-});
-noBtn.addEventListener("mouseenter", moveNo);
-noBtn.addEventListener("click", (e)=>{
-  e.preventDefault();
-  moveNo();
+["touchstart","mouseenter","click"].forEach(e=>{
+  noBtn.addEventListener(e,(ev)=>{
+    ev.preventDefault();
+    moveNo();
+  });
 });
 
-/* STEP 3: YES button ONLY */
-yesBtn.addEventListener("click", ()=>{
+/* Fireworks system */
+let particles=[];
+function launchFireworks(){
+  canvas.style.display="block";
+  for(let i=0;i<120;i++){
+    particles.push({
+      x:Math.random()*canvas.width,
+      y:canvas.height,
+      vx:(Math.random()-0.5)*6,
+      vy:Math.random()*-10-6,
+      life:Math.random()*60+60,
+      color:`hsl(${Math.random()*360},100%,60%)`
+    });
+  }
+}
+
+function animate(){
+  ctx.fillStyle="rgba(0,0,0,.2)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  particles.forEach(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vy+=0.12;
+    p.life--;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,2.5,0,Math.PI*2);
+    ctx.fill();
+  });
+  particles = particles.filter(p=>p.life>0);
+  if(particles.length) requestAnimationFrame(animate);
+}
+
+/* Step 3: YES only */
+yesBtn.onclick = () => {
   if(answered) return;
   answered = true;
-  playSound(900,300); // success sound
-  content.innerHTML = "<h2>❤️ I LOVE YOU BAEB ❤️</h2>";
-});
+  playPop(900);
+  content.innerHTML="<h2>❤️ I LOVE YOU BAEB ❤️</h2>";
+  launchFireworks();
+  animate();
+};
 </script>
 
 </body>
